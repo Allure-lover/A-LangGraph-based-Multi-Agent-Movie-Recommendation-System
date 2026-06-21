@@ -1,0 +1,29 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+
+# Data / Cache
+*.db
+.faiss_index/
+
+# Env
+.env.local
+.env.production
+
+# Streamlit
+.streamlit/
+
+# OS
+.DS_Store
+Thumbs.db

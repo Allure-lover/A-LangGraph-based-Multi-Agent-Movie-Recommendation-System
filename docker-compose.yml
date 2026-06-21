@@ -1,0 +1,92 @@
+# LangGraph 推荐系统 — 一键部署
+#
+# 启动:
+#   docker-compose up -d
+#
+# 服务:
+#   api       — FastAPI 推荐服务 (端口 8000)
+#   dashboard — Streamlit 管理后台 (端口 8501)
+#   redis     — 缓存服务 (端口 6379)
+#
+# 查看:
+#   API Docs:    http://localhost:8000/docs
+#   Dashboard:   http://localhost:8501
+#
+# 注意: 将 .env 中的 LLM API Key 填写正确后再启动
+
+version: "3.9"
+
+services:
+  # ── Redis 缓存 ──
+  redis:
+    image: redis:7-alpine
+    container_name: recommender-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── FastAPI 推荐服务 ──
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recommender-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # 持久化 SQLite 数据库和 FAISS 索引（避免容器重启丢失）
+      - api_data:/app/data
+    environment:
+      # Redis 连接
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_TTL=300
+      # 数据库路径（容器内）
+      - DB_PATH=/app/data/recommender_memory.db
+      # FAISS 索引目录（容器内）
+      - FAISS_INDEX_DIR=/app/data/.faiss_index
+      # 服务配置
+      - HOST=0.0.0.0
+      - PORT=8000
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: >
+      sh -c "python -c 'from my_agent.utils.rag import build_faiss_index; build_faiss_index()' &&
+             uvicorn server:app --host 0.0.0.0 --port 8000"
+
+  # ── Streamlit 管理后台 ──
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recommender-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_TTL=300
+      - DB_PATH=/app/data/recommender_memory.db
+      - FAISS_INDEX_DIR=/app/data/.faiss_index
+      - API_BASE_URL=http://api:8000
+    env_file:
+      - .env
+    depends_on:
+      - api
+    restart: unless-stopped
+    command: streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+
+volumes:
+  redis_data:
+  api_data:

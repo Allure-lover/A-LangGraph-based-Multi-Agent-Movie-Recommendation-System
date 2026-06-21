@@ -1,0 +1,8 @@
+[server]
+address = "127.0.0.1"
+port = 8501
+fileWatcherType = "poll"
+
+[runner]
+# 禁止 Streamlit 扫描不相关的第三方包（避免 transformers/zoedepth 报错）
+fastReruns = true
