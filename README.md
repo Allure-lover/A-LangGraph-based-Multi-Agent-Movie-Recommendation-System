@@ -199,7 +199,7 @@ def llm_expand_retrieve(query: str, top_k: int = 10) -> list[dict]:
          │
          ▼
 ┌─────────────────┐
-│  FAISS 检索     │  余弦相似度搜索 100 部电影向量
+│  FAISS 检索     │  余弦相似度搜索 500 部电影向量
 │  (3 路并行)     │
 └────────┬────────┘
          │
